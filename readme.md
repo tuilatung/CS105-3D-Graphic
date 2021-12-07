@@ -10,6 +10,9 @@
 
 
 ## Installation
+
+Install NodeJS and yarn (required)
+
 Clone project and move on to the project folder
 ```
 git clone https://github.com/tuilatung/CS105-3D-Graphic.git
