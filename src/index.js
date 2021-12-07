@@ -32,15 +32,15 @@ scene = new THREE.Scene()
 init()
 
 function init() {
-  renderer = new THREE.WebGLRenderer( { canvas: canvas,antialias: true } );
-  renderer.setPixelRatio( window.devicePixelRatio );
-  renderer.setSize( window.innerWidth, window.innerHeight );
-  document.body.appendChild( renderer.domElement );
+    renderer = new THREE.WebGLRenderer( { canvas: canvas, antialias: true } );
+    renderer.setPixelRatio( window.devicePixelRatio );
+    renderer.setSize( window.innerWidth, window.innerHeight );
+    document.body.appendChild( renderer.domElement );
 
-  renderer.shadowMap.enabled = true;
+    renderer.shadowMap.enabled = true;
 
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-  renderer.outputEncoding = THREE.sRGBEncoding;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.outputEncoding = THREE.sRGBEncoding;
 }
 
 
