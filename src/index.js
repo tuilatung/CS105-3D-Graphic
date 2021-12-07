@@ -46,13 +46,13 @@ let params = {
     loadFile : function() { 
         document.getElementById('myInput').click();
     },
-    shape: 'tube',
-    material: 'flat',
+    shape: 'teapot',
+    material: 'point',
     modeControl: 'translate',
     color: 0xffffff,
-    lx:-50,
-    ly:200,
-    lz:50,
+    lx:40,
+    ly:240,
+    lz:40,
     cx:400,
     cy:200,
     cz:400,
@@ -71,6 +71,19 @@ const canvas = document.querySelector('canvas.webgl')
 init();
 animate();
 
+function getPlane(size) {
+    var geometry = new THREE.PlaneGeometry(size, size);
+    var material = new THREE.MeshBasicMaterial({
+        color: 0xff0000,
+        side: THREE.DoubleSide
+    });
+    var mesh = new THREE.Mesh(
+        geometry,
+        material
+    );
+    return mesh;
+}
+
 function init() {
 
     // renderer
@@ -85,10 +98,6 @@ function init() {
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.outputEncoding = THREE.sRGBEncoding;
 
-    // effect = new AsciiEffect( renderer, ' .:-+*=%@#', { invert: true } );
-    // effect.setSize( window.innerWidth, window.innerHeight );
-    // effect.domElement.style.color = 'white';
-    // effect.domElement.style.backgroundColor = 'black';
     
     // group camera
     const aspect = window.innerWidth / window.innerHeight;
@@ -96,8 +105,8 @@ function init() {
     cameraOrtho = new THREE.OrthographicCamera( - 600 * aspect, 600 * aspect, 600, - 600, 0.01, 30000 );
     currentCamera = cameraPersp;
 
-    currentCamera.position.set( 400, 200, 400 );
-    currentCamera.lookAt( 0, 400, 0 );
+    currentCamera.position.set( 0, 500, 400 );
+    currentCamera.lookAt( new THREE.Vector3(0, 1, 0) );
 
     // scene
     scene = new THREE.Scene();
@@ -131,18 +140,21 @@ function init() {
 
     // ground
 
-    const ground = new THREE.Mesh( new THREE.PlaneGeometry( 2000, 2000 ), new THREE.MeshPhongMaterial( { color: 0x808080, dithering: true } ) );
+    const ground = new THREE.Mesh( new THREE.PlaneGeometry( 3000, 3000 ), new THREE.MeshPhongMaterial( { color: 0x808080, dithering: true } ) );
     ground.position.set( 0, - 50, 0 );
     ground.rotation.x = - Math.PI / 2;
     ground.receiveShadow = true;
     scene.add( ground );
     
-    const grid = new THREE.GridHelper( 2000, 50, 0x000000, 0x000000 );
-    grid.material.opacity = 0.2;
-    grid.position.set( 0, - 50, 0 );
-    grid.material.transparent = true;
-    scene.add( grid );
+    // const grid = new THREE.GridHelper( 2000, 50, 0x000000, 0x000000 );
+    // grid.material.opacity = 0.2;
+    // grid.position.set( 0, - 50, 0 );
+    // grid.material.transparent = true;
+    // scene.add( grid );
 
+    const plane = getPlane(30);
+    plane.rotation.x = Math.PI/2;
+    scene.add( plane );
     // default object settings
     // Material 
     wireMaterial = new THREE.MeshBasicMaterial( { color: params.color, wireframe: true , dithering: true } );
@@ -284,12 +296,7 @@ function init() {
     h = gui.addFolder( "Light direction" );
     h.add( params, "lx", -100, 100, 10 ).name( "x" );
     h.add( params, "ly", 0, 400, 10 ).name( "y" );
-    h.add( params, "lz", -100, 100, 10 ).name( "z" );
-    // h = gui.addFolder( "Camera direction" );
-    // h.add( params, "cx", 0, 400, 20 ).name( "x" );
-    // h.add( params, "cy", -300, 400, 20 ).name( "y" );
-    // h.add( params, "cz", 0, 400, 20 ).name( "z" );
-    
+    h.add( params, "lz", -100, 100, 10 ).name( "z" );    
 
     // event listener
     document.getElementById('myInput').addEventListener('change', function(){
