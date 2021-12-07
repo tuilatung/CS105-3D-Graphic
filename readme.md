@@ -36,16 +36,15 @@ Install dependencies (only for first time) :
 yarn
 ```
 
-```
-export NODE_OPTIONS=--openssl-legacy-provider
-```
-
 Compile the code for development and start a local server:
 
 ```
 yarn dev
 ```
-
+If you face to ERR_OSSL_EVP_UNSUPPORTED, run this script and re-run `yarn dev`
+```
+export NODE_OPTIONS=--openssl-legacy-provider
+```
 Local Server will open on:
 
 ```
