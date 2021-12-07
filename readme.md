@@ -11,7 +11,13 @@
 
 ## Installation
 
-Install NodeJS and yarn (required)
+Install NodeJS (required)
+[Download and install NodeJS](https://nodejs.org/en/download/)
+
+Install Yarn (required)
+```
+npm install --global yarn
+```
 
 Clone project and move on to the project folder
 ```
