@@ -10,6 +10,14 @@
 
 
 ## Installation
+Clone project and move on to the project folder
+```
+git clone https://github.com/tuilatung/CS105-3D-Graphic.git
+
+cd CS105-3D-Graphic
+```
+
+*Note:* Make sure you are in CS105-3D-Graphic folder!
 
 Install dependencies (only for first time) :
 
