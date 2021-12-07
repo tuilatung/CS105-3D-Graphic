@@ -1,4 +1,4 @@
-import './style/main.css'
+// import './style/main.css'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { TeapotGeometry } from 'three/examples/jsm/geometries/TeapotGeometry'
