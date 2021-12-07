@@ -1,4 +1,4 @@
-# Three.js Template / Boilerplate
+# 3D Graphic With Three.js and JavaScript
 
 *Get started with Three.js to render 3d Web Experience*
 
@@ -31,7 +31,7 @@ Local Server will open on:
 http://localhost:8080/
 ```
 
-Create the build:
+Create the build (optional):
 
 ```
 yarn build
