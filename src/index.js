@@ -5,10 +5,6 @@ import { TeapotGeometry } from 'three/examples/jsm/geometries/TeapotGeometry'
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js'
 import { GUI } from 'three/examples/jsm/libs/dat.gui.module'
 
-/**
- * GUI Controls
- */
- const gui = new GUI()
 
 let scene, renderer, mesh;
 let cameraPersp, cameraOrtho, currentCamera;
@@ -17,8 +13,6 @@ let spotLight, lightHelper, shadowCameraHelper;
 let control, orbit, points;
 let wireMaterial, pointMaterial, flatMaterial, gouraudMaterial, phongMaterial, texturedMaterial, reflectiveMaterial;
 let boxGeo, sphereGeo, teapotGeo, torusGeo, torusKoxGeo,cylinderGeo, coneGeo, tubeGeo ;
-
-
 
 
 /**
@@ -64,6 +58,13 @@ let params = {
     cz:400,
     animation: false,
 };
+
+
+/**
+ * GUI Controls
+ */
+ const gui = new GUI();
+
 // get canvas
 const canvas = document.querySelector('canvas.webgl')
 
@@ -101,8 +102,6 @@ function init() {
     // scene
     scene = new THREE.Scene();
     scene.background = new THREE.Color( 0xa0a0a0 );
-    // scene.fog = new THREE.Fog( 0xa0a0a0, 200, 1000 );
-    // scene.add( new THREE.GridHelper( 2000, 50, 0x888888, 0x444444 ) );
 
     // light
     const ambient = new THREE.AmbientLight( 0xffffff, 0.1 );
