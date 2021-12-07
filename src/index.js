@@ -3,7 +3,12 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { TeapotGeometry } from 'three/examples/jsm/geometries/TeapotGeometry'
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js'
+import { GUI } from 'three/examples/jsm/libs/dat.gui.module'
 
+/**
+ * GUI Controls
+ */
+ const gui = new GUI()
 
 let scene, renderer, mesh;
 let cameraPersp, cameraOrtho, currentCamera;
@@ -14,24 +19,61 @@ let wireMaterial, pointMaterial, flatMaterial, gouraudMaterial, phongMaterial, t
 let boxGeo, sphereGeo, teapotGeo, torusGeo, torusKoxGeo,cylinderGeo, coneGeo, tubeGeo ;
 
 
-/**
- * GUI Controls
- */
-import * as dat from 'dat.gui'
-const gui = new dat.GUI()
+
 
 /**
  * Base
  */
-// Canvas
+
+class CustomSinCurve extends THREE.Curve {
+
+	constructor( scale = 1 ) {
+
+		super();
+
+		this.scale = scale;
+
+	}
+
+	getPoint( t, optionalTarget = new THREE.Vector3() ) {
+
+		const tx = t * 3 - 1.5;
+		const ty = Math.sin( 2 * Math.PI * t );
+		const tz = 0;
+
+		return optionalTarget.set( tx, ty, tz ).multiplyScalar( this.scale );
+
+	}
+
+}
+
+
+let params = {
+    loadFile : function() { 
+        document.getElementById('myInput').click();
+    },
+    shape: 'tube',
+    material: 'flat',
+    modeControl: 'translate',
+    color: 0xffffff,
+    lx:-50,
+    ly:200,
+    lz:50,
+    cx:400,
+    cy:200,
+    cz:400,
+    animation: false,
+};
+// get canvas
 const canvas = document.querySelector('canvas.webgl')
 
-// Scene
-scene = new THREE.Scene()
-
-init()
+init();
+animate();
 
 function init() {
+
+    // renderer
+
     renderer = new THREE.WebGLRenderer( { canvas: canvas, antialias: true } );
     renderer.setPixelRatio( window.devicePixelRatio );
     renderer.setSize( window.innerWidth, window.innerHeight );
@@ -41,110 +83,403 @@ function init() {
 
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.outputEncoding = THREE.sRGBEncoding;
+
+    // effect = new AsciiEffect( renderer, ' .:-+*=%@#', { invert: true } );
+    // effect.setSize( window.innerWidth, window.innerHeight );
+    // effect.domElement.style.color = 'white';
+    // effect.domElement.style.backgroundColor = 'black';
+    
+    // group camera
+    const aspect = window.innerWidth / window.innerHeight;
+    cameraPersp = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 1000 );
+    cameraOrtho = new THREE.OrthographicCamera( - 600 * aspect, 600 * aspect, 600, - 600, 0.01, 30000 );
+    currentCamera = cameraPersp;
+
+    currentCamera.position.set( 400, 200, 400 );
+    currentCamera.lookAt( 0, 400, 0 );
+
+    // scene
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color( 0xa0a0a0 );
+    // scene.fog = new THREE.Fog( 0xa0a0a0, 200, 1000 );
+    // scene.add( new THREE.GridHelper( 2000, 50, 0x888888, 0x444444 ) );
+
+    // light
+    const ambient = new THREE.AmbientLight( 0xffffff, 0.1 );
+    scene.add( ambient );
+
+    spotLight = new THREE.SpotLight( 0xffffff, 1 );
+    spotLight.position.set( params.lx, params.ly, params.lz );
+    spotLight.angle = Math.PI / 4;
+    spotLight.penumbra = 0.1;
+    spotLight.decay = 2;
+    spotLight.distance = 400;
+    spotLight.intensity = 5;
+
+    spotLight.castShadow = true;
+    spotLight.shadow.mapSize.width = 512;
+    spotLight.shadow.mapSize.height = 512;
+    spotLight.shadow.camera.near = 10;
+    spotLight.shadow.camera.far = 600;
+    spotLight.shadow.focus = 1;
+    scene.add( spotLight );
+
+    lightHelper = new THREE.SpotLightHelper( spotLight );
+    scene.add( lightHelper );
+
+    shadowCameraHelper = new THREE.CameraHelper( spotLight.shadow.camera );
+    scene.add( shadowCameraHelper );
+
+    // ground
+
+    const ground = new THREE.Mesh( new THREE.PlaneGeometry( 2000, 2000 ), new THREE.MeshPhongMaterial( { color: 0x808080, dithering: true } ) );
+    ground.position.set( 0, - 50, 0 );
+    ground.rotation.x = - Math.PI / 2;
+    ground.receiveShadow = true;
+    scene.add( ground );
+    
+    const grid = new THREE.GridHelper( 2000, 50, 0x000000, 0x000000 );
+    grid.material.opacity = 0.2;
+    grid.position.set( 0, - 50, 0 );
+    grid.material.transparent = true;
+    scene.add( grid );
+
+    // default object settings
+    // Material 
+    wireMaterial = new THREE.MeshBasicMaterial( { color: params.color, wireframe: true , dithering: true } );
+    pointMaterial = new THREE.MeshBasicMaterial( { color: params.color, wireframe: true , dithering: true } );
+    flatMaterial = new THREE.MeshPhongMaterial( { color: params.color, specular: 0x000000, flatShading: true, side: THREE.DoubleSide , dithering: true } );
+    gouraudMaterial = new THREE.MeshLambertMaterial( { color: params.color, side: THREE.DoubleSide , dithering: true } );
+    phongMaterial = new THREE.MeshPhongMaterial( { color: params.color, side: THREE.DoubleSide , dithering: true } );
+
+    // TEXTURE MAP
+    const textureMap = new THREE.TextureLoader().load( 'concreat.jpg' );
+    textureMap.wrapS = textureMap.wrapT = THREE.RepeatWrapping;
+    textureMap.anisotropy = 16;
+    textureMap.encoding = THREE.sRGBEncoding;
+    texturedMaterial = new THREE.MeshPhongMaterial( { color: params.color, map: textureMap, side: THREE.DoubleSide , dithering: true } );
+
+    // REFLECTION MAP
+    const path = "./";
+    const urls = [
+        path + "px.jpg", path + "nx.jpg",
+        path + "py.jpg", path + "ny.jpg",
+        path + "pz.jpg", path + "nz.jpg"
+    ];
+    textureCube = new THREE.CubeTextureLoader().load( urls );
+    textureCube.encoding = THREE.sRGBEncoding;
+    reflectiveMaterial = new THREE.MeshPhongMaterial( { color: params.color, envMap: textureCube, side: THREE.DoubleSide , dithering: true } );
+
+    // Geometry
+    boxGeo = new THREE.BoxGeometry( 100, 100, 100 );
+    sphereGeo = new THREE.SphereGeometry( 100, 32, 32 );
+    teapotGeo = new TeapotGeometry(70, 5, true, true, true, true, true);
+    torusGeo = new THREE.TorusGeometry(50, 30, 10, 50)
+    cylinderGeo = new THREE.CylinderGeometry(60.0, 60.0, 140.0, 30);
+    coneGeo = new THREE.ConeGeometry( 80, 160, 64 );
+    torusKoxGeo = new THREE.TorusKnotGeometry( 50, 30, 32, 8 );
+    const path1 = new CustomSinCurve( 80 );
+    tubeGeo =  new THREE.TubeGeometry( path1, 50, 30, 8, false );
+
+    // Box with line
+    mesh = new THREE.Mesh(tubeGeo, flatMaterial);
+    mesh.position.y = 40;
+    mesh.castShadow = true;
+    scene.add(mesh);
+
+    //
+    const pointsMaterial = new THREE.PointsMaterial( {
+
+        size: 5,
+        sizeAttenuation: false,
+        map: new THREE.TextureLoader().load( 'white-dot.png' ),
+        alphaTest: 0.5,
+        morphTargets: true
+
+    } );
+    points = new THREE.Points( mesh.geometry, pointsMaterial );
+    points.morphTargetInfluences = mesh.morphTargetInfluences;
+    points.morphTargetDictionary = mesh.morphTargetDictionary;
+    points.visible = false;
+    mesh.add( points );
+
+    // controls
+    orbit = new OrbitControls( currentCamera, renderer.domElement );
+    orbit.update();
+    orbit.addEventListener( 'change', render );
+
+    control = new TransformControls( currentCamera, renderer.domElement );
+    control.addEventListener( 'change', render );
+
+    control.addEventListener( 'dragging-changed', function ( event ) {
+        orbit.enabled = ! event.value;
+    } );
+
+    // control add mesh, scene add control
+    control.attach( mesh );
+    scene.add( control );
+
+    // add GUI
+    let ob = gui.addFolder('Object');
+    ob.add( params, 'shape', { Box: 'box', Sphere: 'sphere', TeaPot: 'teapot', Torus: 'torus', TorusKnox: 'torusKnox', Cylinder: 'cylinder', Cone :'cone', Tube: 'tube'} ).name('Shape');
+    ob.add( params, 'material', { Wireframe: 'wireframe', Point: 'point', Flat: 'flat', Smooth: 'smooth', Glossy: 'glossy' , Textured: 'textured' , Reflective: 'reflective'  } ).name('Material').onChange(function(val){
+        if (val!= 'reflective'){
+            ground.visible = true;
+            grid.visible = true;
+            scene.background = new THREE.Color( 0xa0a0a0 );
+        }else{
+            grid.visible = false;
+            ground.visible = false;
+        }
+    });
+    ob.add(params, 'loadFile').name('LoadImage texture');
+    ob.addColor( params, 'color' ).name('Color object')
+    ob.add( params, 'animation' ).name('Animation').onChange(function(val){
+        if(!val){
+            mesh.position.set(0,40,0);
+            mesh.rotation.x = 0;
+            mesh.rotation.y = 0;
+        }
+    });
+    ob.add( params, 'modeControl', {Disable: 'disable', Translate: 'translate', Rotate: 'rotate', Scale: 'scale' } ).name('Mode Control');
+    // ob.open();
+    const paramsLight = {
+        'light color': spotLight.color.getHex(),
+        intensity: spotLight.intensity,
+        distance: spotLight.distance,
+        angle: spotLight.angle,
+        penumbra: spotLight.penumbra,
+        decay: spotLight.decay,
+        focus: spotLight.shadow.focus
+    };
+    let h = gui.addFolder('Light');
+    h.addColor( paramsLight, 'light color' ).onChange( function ( val ) {
+        spotLight.color.setHex( val );
+        render();
+    } );
+    h.add( paramsLight, 'intensity', 0, 10 ).onChange( function ( val ) {
+        spotLight.intensity = val;
+        render();
+    } );
+    h.add( paramsLight, 'distance', 200, 800 ).onChange( function ( val ) {
+        spotLight.distance = val;
+        render();
+    } );
+    h.add( paramsLight, 'angle', 0, Math.PI / 3 ).onChange( function ( val ) {
+        spotLight.angle = val;
+        render();
+    } );
+    h.add( paramsLight, 'penumbra', 0, 1 ).onChange( function ( val ) {
+        spotLight.penumbra = val;
+        render();
+    } );
+    h.add( paramsLight, 'decay', 1, 2 ).onChange( function ( val ) {
+        spotLight.decay = val;
+        render();
+    } );
+    h.add( paramsLight, 'focus', 0, 1 ).onChange( function ( val ) {
+        spotLight.shadow.focus = val;
+        render();
+    } );
+
+    h = gui.addFolder( "Light direction" );
+    h.add( params, "lx", -100, 100, 10 ).name( "x" );
+    h.add( params, "ly", 0, 400, 10 ).name( "y" );
+    h.add( params, "lz", -100, 100, 10 ).name( "z" );
+    // h = gui.addFolder( "Camera direction" );
+    // h.add( params, "cx", 0, 400, 20 ).name( "x" );
+    // h.add( params, "cy", -300, 400, 20 ).name( "y" );
+    // h.add( params, "cz", 0, 400, 20 ).name( "z" );
+    
+
+    // event listener
+    document.getElementById('myInput').addEventListener('change', function(){
+        const file1 = document.getElementById('myInput').files[0];
+        let reader = new FileReader();
+        reader.readAsDataURL(file1);
+        reader.onload = function () {
+            localStorage.setItem("image", reader.result);
+            // TEXTURE MAP
+            const textureMap1 = new THREE.TextureLoader().load( localStorage.getItem("image"));
+            textureMap1.wrapS = textureMap1.wrapT = THREE.RepeatWrapping;
+            textureMap1.anisotropy = 16;
+            textureMap1.encoding = THREE.sRGBEncoding;
+            texturedMaterial = new THREE.MeshPhongMaterial( { color: params.color, map: textureMap1, side: THREE.DoubleSide } );
+        };
+    })
+    window.addEventListener( 'resize', onWindowResize );
+    gui.domElement.addEventListener( 'change', function(){
+        // control
+        if(params.modeControl == 'disable'){
+            control.enabled = false;
+        } else{
+            control.enabled = true;
+            switch(params.modeControl){
+                case 'translate':
+                    control.setMode( 'translate' );
+                    break;
+                case 'rotate':
+                    control.setMode( 'rotate' );
+                    break;
+                case 'scale':
+                    control.setMode( 'scale' );
+                    break;
+            } 
+        }
+        
+    },false);
+
 }
 
+function onWindowResize() {
 
+    const aspect = window.innerWidth / window.innerHeight;
 
+    cameraPersp.aspect = aspect;
+    cameraPersp.updateProjectionMatrix();
 
+    cameraOrtho.left = cameraOrtho.bottom * aspect;
+    cameraOrtho.right = cameraOrtho.top * aspect;
+    cameraOrtho.updateProjectionMatrix();
 
+    renderer.setSize( window.innerWidth, window.innerHeight );
 
+    render();
 
+}
 
+function render() {
+    lightHelper.update();
+    shadowCameraHelper.update();
+    renderer.render( scene, currentCamera );
+}
 
+function animate(){
+    requestAnimationFrame( animate );
+    simulate();
+    render();
+}
 
+function box( width, height, depth ) {
 
+    width = width * 0.5,
+    height = height * 0.5,
+    depth = depth * 0.5;
 
+    const geometry = new THREE.BufferGeometry();
+    const position = [];
 
+    position.push(
+        - width, - height, - depth,
+        - width, height, - depth,
 
-// /**
-//  * Object
-//  */
-// const geometry = new THREE.IcosahedronGeometry(20, 1)
-// const material = new THREE.MeshNormalMaterial()
-// // Material Props.
-// material.wireframe = true
-// // Create Mesh & Add To Scene
-// mesh = new THREE.Mesh(geometry, material)
-// scene.add(mesh)
+        - width, height, - depth,
+        width, height, - depth,
 
-// /**
-//  * Sizes
-//  */
-// const sizes = {
-//   width: window.innerWidth,
-//   height: window.innerHeight,
-// }
+        width, height, - depth,
+        width, - height, - depth,
 
-// window.addEventListener('resize', () => {
-//   // Update sizes
-//   sizes.width = window.innerWidth
-//   sizes.height = window.innerHeight
+        width, - height, - depth,
+        - width, - height, - depth,
 
-//   // Update camera
-//   camera.aspect = sizes.width / sizes.height
-//   camera.updateProjectionMatrix()
+        - width, - height, depth,
+        - width, height, depth,
 
-//   // Update renderer
-//   renderer.setSize(sizes.width, sizes.height)
-//   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-// })
+        - width, height, depth,
+        width, height, depth,
 
-// /**
-//  * Camera
-//  */
-// // Base camera
-// const camera = new THREE.PerspectiveCamera(
-//   75,
-//   sizes.width / sizes.height,
-//   0.001,
-//   5000
-// )
-// camera.position.x = 1
-// camera.position.y = 1
-// camera.position.z = 50
-// scene.add(camera)
+        width, height, depth,
+        width, - height, depth,
 
-// // Controls
-// const controls = new OrbitControls(camera, canvas)
-// controls.enableDamping = true
-// controls.autoRotate = true
-// // controls.enableZoom = false
-// controls.enablePan = false
-// controls.dampingFactor = 0.05
-// controls.maxDistance = 1000
-// controls.minDistance = 30
-// controls.touches = {
-//   ONE: THREE.TOUCH.ROTATE,
-//   TWO: THREE.TOUCH.DOLLY_PAN,
-// }
-// /**
-//  * Renderer
-//  */
-// const renderer = new THREE.WebGLRenderer({
-//   canvas: canvas,
-//   antialias: true,
-// })
-// renderer.setSize(sizes.width, sizes.height)
-// renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+        width, - height, depth,
+        - width, - height, depth,
 
-// /**
-//  * Animate
-//  */
-// const clock = new THREE.Clock()
-// const tick = () => {
-//   const elapsedTime = clock.getElapsedTime()
+        - width, - height, - depth,
+        - width, - height, depth,
 
-//   //mesh.rotation.y += 0.01 * Math.sin(1)
-//   //mesh.rotation.y += 0.01 * Math.sin(1)
-//   mesh.rotation.z += 0.01 * Math.sin(1)
+        - width, height, - depth,
+        - width, height, depth,
 
-//   // Update controls
-//   controls.update()
-//   // Render
-//   renderer.render(scene, camera)
+        width, height, - depth,
+        width, height, depth,
 
-//   // Call tick again on the next frame
-//   window.requestAnimationFrame(tick)
-// }
+        width, - height, - depth,
+        width, - height, depth
+    );
 
-// tick()
+    geometry.setAttribute( 'position', new THREE.Float32BufferAttribute( position, 3 ) );
+
+    return geometry;
+
+}
+
+function simulate() {
+    switch(params.shape){
+        case 'box':
+            mesh.geometry = boxGeo;
+            break;
+        case 'sphere':
+            mesh.geometry = sphereGeo;
+            break;
+        case 'teapot':
+            mesh.geometry = teapotGeo;
+            break;
+        case 'torus':
+            mesh.geometry = torusGeo;
+            break; 
+        case 'torusKnox':
+            mesh.geometry = torusKoxGeo;
+            break;
+        case 'cylinder':
+            mesh.geometry = cylinderGeo;
+            break;   
+        case 'cone':
+            mesh.geometry = coneGeo;
+            break;  
+        case 'tube':
+            mesh.geometry = tubeGeo;
+            break;  
+    } 
+    if(params.material=='point'){
+        points.visible=true;
+        points.geometry = mesh.geometry;
+    }else{
+        points.visible=false;
+    }
+    switch(params.material){
+        case 'wireframe':
+            mesh.material = wireMaterial;
+            break;
+        case 'point':
+            mesh.material = flatMaterial;
+            break;
+        case 'flat':
+            mesh.material = flatMaterial;
+            break;
+        case 'smooth':
+            mesh.material = gouraudMaterial;
+            break;
+        case 'glossy':
+            mesh.material = phongMaterial;
+            break;
+        case 'textured':
+            mesh.material = texturedMaterial;
+            break;
+        case 'reflective':
+            mesh.material = reflectiveMaterial;
+            scene.background = textureCube;
+            break;
+    }   
+    mesh.material.color.setHex( params.color ) ;  
+    spotLight.position.set(params.lx,params.ly,params.lz);
+    // currentCamera.position.set(params.cx,params.cy,params.cz);
+    if (params.animation){
+        const time = Date.now();
+        mesh.position.x = Math.cos( time * 0.001 ) * 300;
+        mesh.position.y = Math.sin( time * 0.001 ) * 30;
+        mesh.position.z = Math.sin( time * 0.001 ) * 300;
+
+        mesh.rotation.x += 0.02;
+        mesh.rotation.y += 0.03;
+    }
+}
