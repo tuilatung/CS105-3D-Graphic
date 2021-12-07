@@ -15,6 +15,8 @@ Install dependencies (only for first time) :
 
 ```
 yarn
+
+export NODE_OPTIONS=--openssl-legacy-provider
 ```
 
 Compile the code for development and start a local server:
