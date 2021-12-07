@@ -13,7 +13,9 @@
 Clone project and move on to the project folder
 ```
 git clone https://github.com/tuilatung/CS105-3D-Graphic.git
+```
 
+```
 cd CS105-3D-Graphic
 ```
 
@@ -23,7 +25,9 @@ Install dependencies (only for first time) :
 
 ```
 yarn
+```
 
+```
 export NODE_OPTIONS=--openssl-legacy-provider
 ```
 
