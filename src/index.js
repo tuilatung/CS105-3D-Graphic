@@ -185,7 +185,7 @@ function init() {
     textured_box.encoding = THREE.sRGBEncoding;
     reflective_material = new THREE.MeshPhongMaterial( { color: params.color, envMap: textured_box, side: THREE.DoubleSide , dithering: true } );
 
-    // Geometry
+    // Geometries
     box = new THREE.BoxGeometry( 100, 100, 100 );
     sphere = new THREE.SphereGeometry( 100, 32, 32 );
     teapot = new TeapotGeometry(70, 5, true, true, true, true, true);
@@ -256,7 +256,7 @@ function init() {
     ob.add(params, 'loadFile').name('Import image');
     ob.addColor( params, 'color' ).name('Color picker')
     ob.add( params, 'animation' ,{None: 'none', Animation1: 'animation1', Animation2: 'animation2'}).name('Animations').onChange(function(val){
-        if(!val){
+        if(val == 'none'){
             mesh.position.set(0,40,0);
             mesh.rotation.x = 0;
             mesh.rotation.y = 0;
@@ -454,9 +454,6 @@ function simulate() {
             mesh.rotation.y += 0.05;
             break;
         default:
-            mesh.position.set(0,40,0);
-            mesh.rotation.x = 0;
-            mesh.rotation.y = 0;
             break;
     }
 }
