@@ -2,17 +2,20 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { TeapotGeometry } from 'three/examples/jsm/geometries/TeapotGeometry'
-import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js'
 import { GUI } from 'three/examples/jsm/libs/dat.gui.module'
+import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js'
 
 
 let scene, renderer, mesh;
 let perspective_camera, orthographic_camera;
+
+
 let textured_box;
-let spotLight, lightHelper, shadowCameraHelper;
+let spot_light, shadow_camera_helper;
 let control, orbit, points;
-let wireMaterial, pointMaterial, flatMaterial, gouraudMaterial, phongMaterial, texturedMaterial, reflectiveMaterial;
-let boxGeo, sphereGeo, teapotGeo, torusGeo, torusKoxGeo,cylinderGeo, coneGeo, tubeGeo ;
+let wire_material, point_material, flat_material, ground_material;
+let phong_material, texture_material, reflective_material;
+let box, sphere, teapot, torus, torus_Kox, cylinder, cone, tube;
 
 
 /**
@@ -47,7 +50,7 @@ let params = {
         document.getElementById('myInput').click();
     },
     shape: 'teapot',
-    material: 'point',
+    material: 'textured',
     modeControl: 'translate',
     color: 0xffffff,
     lx:40,
@@ -56,7 +59,7 @@ let params = {
     cx:400,
     cy:200,
     cz:400,
-    animation: false,
+    animation: 'none',
 };
 
 
@@ -69,7 +72,7 @@ let params = {
 const canvas = document.querySelector('canvas.webgl')
 
 init();
-animate();
+loop();
 
 function getPlane(size) {
     var geometry = new THREE.PlaneGeometry(size, size);
@@ -99,11 +102,9 @@ function init() {
     renderer.outputEncoding = THREE.sRGBEncoding;
 
     
-    // group camera
     const aspect = window.innerWidth / window.innerHeight;
-    perspective_camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 1000 );
+    perspective_camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 1, 1000 );
     orthographic_camera = new THREE.OrthographicCamera( - 600 * aspect, 600 * aspect, 600, - 600, 0.01, 30000 );
-
     perspective_camera.position.set( 0, 500, 400 );
     perspective_camera.lookAt( new THREE.Vector3(0, 1, 0) );
 
@@ -115,59 +116,63 @@ function init() {
     const ambient = new THREE.AmbientLight( 0xffffff, 0.1 );
     scene.add( ambient );
 
-    spotLight = new THREE.SpotLight( 0xffffff, 1 );
-    spotLight.position.set( params.lx, params.ly, params.lz );
-    spotLight.angle = Math.PI / 4;
-    spotLight.penumbra = 0.1;
-    spotLight.decay = 2;
-    spotLight.distance = 400;
-    spotLight.intensity = 5;
+    spot_light = new THREE.SpotLight( 0xffffff, 1 );
+    spot_light.position.set( params.lx, params.ly, params.lz );
+    spot_light.angle = Math.PI / 4;
+    spot_light.decay = 2;
+    spot_light.intensity = 5;
+    spot_light.shadow.bias = 0.001;
+    spot_light.distance = 400;
+    spot_light.penumbra = 0.5;
 
-    spotLight.castShadow = true;
-    spotLight.shadow.mapSize.width = 512;
-    spotLight.shadow.mapSize.height = 512;
-    spotLight.shadow.camera.near = 10;
-    spotLight.shadow.camera.far = 600;
-    spotLight.shadow.focus = 1;
-    scene.add( spotLight );
 
-    lightHelper = new THREE.SpotLightHelper( spotLight );
-    scene.add( lightHelper );
+    spot_light.castShadow = true;
+    spot_light.shadow.mapSize.width = 1024;
+    spot_light.shadow.mapSize.height = 1024;
+    spot_light.shadow.focus = 1;
+    scene.add( spot_light );
 
-    shadowCameraHelper = new THREE.CameraHelper( spotLight.shadow.camera );
-    scene.add( shadowCameraHelper );
+    shadow_camera_helper = new THREE.CameraHelper( spot_light.shadow.camera );
+    scene.add( shadow_camera_helper );
 
-    // ground
-
-    const ground = new THREE.Mesh( new THREE.PlaneGeometry( 3000, 3000 ), new THREE.MeshPhongMaterial( { color: 0x808080, dithering: true } ) );
-    ground.position.set( 0, - 50, 0 );
+    //TODO: Change ground size
+    const ground = new THREE.Mesh( new THREE.PlaneGeometry( 2000, 2000 ), 
+                                    new THREE.MeshPhongMaterial( 
+                                        { color: 0x074a3e, dithering: true } 
+                                    ) 
+                                );
+    ground.position.set( 0, -100, 0 );
     ground.rotation.x = - Math.PI / 2;
     ground.receiveShadow = true;
+    ground.size = THREE.DoubleSide;
     scene.add( ground );
     
-    // const grid = new THREE.GridHelper( 2000, 50, 0x000000, 0x000000 );
-    // grid.material.opacity = 0.2;
-    // grid.position.set( 0, - 50, 0 );
-    // grid.material.transparent = true;
-    // scene.add( grid );
 
-    const plane = getPlane(30);
-    plane.rotation.x = Math.PI/2;
-    scene.add( plane );
+    const size = 2000;
+    const divisions = 20;
+    const color1 = 0x000000;
+    const color2 = 0xffffff;
+    const helper = new THREE.GridHelper( size, divisions, color1, color2 );
+    helper.material.opacity = 0.5;
+    helper.position.set(0, -100, 0);
+    helper.material.transparent = true;
+    scene.add( helper );
+
+
     // default object settings
     // Material 
-    wireMaterial = new THREE.MeshBasicMaterial( { color: params.color, wireframe: true , dithering: true } );
-    pointMaterial = new THREE.MeshBasicMaterial( { color: params.color, wireframe: true , dithering: true } );
-    flatMaterial = new THREE.MeshPhongMaterial( { color: params.color, specular: 0x000000, flatShading: true, side: THREE.DoubleSide , dithering: true } );
-    gouraudMaterial = new THREE.MeshLambertMaterial( { color: params.color, side: THREE.DoubleSide , dithering: true } );
-    phongMaterial = new THREE.MeshPhongMaterial( { color: params.color, side: THREE.DoubleSide , dithering: true } );
+    wire_material = new THREE.MeshBasicMaterial( { color: params.color, wireframe: true , dithering: true } );
+    point_material = new THREE.MeshBasicMaterial( { color: params.color, wireframe: true , dithering: true } );
+    flat_material = new THREE.MeshPhongMaterial( { color: params.color, specular: 0x000000, flatShading: true, side: THREE.DoubleSide , dithering: true } );
+    ground_material = new THREE.MeshLambertMaterial( { color: params.color, side: THREE.DoubleSide , dithering: true } );
+    phong_material = new THREE.MeshPhongMaterial( { color: params.color, side: THREE.DoubleSide , dithering: true } );
 
     // TEXTURE MAP
     const textureMap = new THREE.TextureLoader().load( 'concreat.jpg' );
     textureMap.wrapS = textureMap.wrapT = THREE.RepeatWrapping;
     textureMap.anisotropy = 16;
     textureMap.encoding = THREE.sRGBEncoding;
-    texturedMaterial = new THREE.MeshPhongMaterial( { color: params.color, map: textureMap, side: THREE.DoubleSide , dithering: true } );
+    texture_material = new THREE.MeshPhongMaterial( { color: params.color, map: textureMap, side: THREE.DoubleSide , dithering: true } );
 
     // REFLECTION MAP
     const path = "./";
@@ -178,21 +183,21 @@ function init() {
     ];
     textured_box = new THREE.CubeTextureLoader().load( urls );
     textured_box.encoding = THREE.sRGBEncoding;
-    reflectiveMaterial = new THREE.MeshPhongMaterial( { color: params.color, envMap: textured_box, side: THREE.DoubleSide , dithering: true } );
+    reflective_material = new THREE.MeshPhongMaterial( { color: params.color, envMap: textured_box, side: THREE.DoubleSide , dithering: true } );
 
     // Geometry
-    boxGeo = new THREE.BoxGeometry( 100, 100, 100 );
-    sphereGeo = new THREE.SphereGeometry( 100, 32, 32 );
-    teapotGeo = new TeapotGeometry(70, 5, true, true, true, true, true);
-    torusGeo = new THREE.TorusGeometry(50, 30, 10, 50)
-    cylinderGeo = new THREE.CylinderGeometry(60.0, 60.0, 140.0, 30);
-    coneGeo = new THREE.ConeGeometry( 80, 160, 64 );
-    torusKoxGeo = new THREE.TorusKnotGeometry( 50, 30, 32, 8 );
+    box = new THREE.BoxGeometry( 100, 100, 100 );
+    sphere = new THREE.SphereGeometry( 100, 32, 32 );
+    teapot = new TeapotGeometry(70, 5, true, true, true, true, true);
+    torus = new THREE.TorusGeometry(50, 30, 10, 50)
+    cylinder = new THREE.CylinderGeometry(60.0, 60.0, 140.0, 30);
+    cone = new THREE.ConeGeometry( 80, 160, 64 );
+    torus_Kox = new THREE.TorusKnotGeometry( 50, 30, 32, 8 );
     const path1 = new SineCurve( 80 );
-    tubeGeo =  new THREE.TubeGeometry( path1, 50, 30, 8, false );
+    tube =  new THREE.TubeGeometry( path1, 50, 30, 8, false );
 
     // Box with line
-    mesh = new THREE.Mesh(tubeGeo, flatMaterial);
+    mesh = new THREE.Mesh(tube, flat_material);
     mesh.position.y = 40;
     mesh.castShadow = true;
     scene.add(mesh);
@@ -225,70 +230,75 @@ function init() {
         orbit.enabled = ! event.value;
     } );
 
-    // control add mesh, scene add control
+
     control.attach( mesh );
     scene.add( control );
 
     // add GUI
     let ob = gui.addFolder('Object');
-    ob.add( params, 'shape', { Box: 'box', Sphere: 'sphere', TeaPot: 'teapot', Torus: 'torus', TorusKnox: 'torusKnox', Cylinder: 'cylinder', Cone :'cone', Tube: 'tube'} ).name('Shape');
-    ob.add( params, 'material', { Wireframe: 'wireframe', Point: 'point', Flat: 'flat', Smooth: 'smooth', Glossy: 'glossy' , Textured: 'textured' , Reflective: 'reflective'  } ).name('Material').onChange(function(val){
-        if (val!= 'reflective'){
-            ground.visible = true;
-            grid.visible = true;
-            scene.background = new THREE.Color( 0xa0a0a0 );
-        }else{
-            grid.visible = false;
-            ground.visible = false;
-        }
+    ob.add( params, 'shape', { TeaPot: 'teapot', Tube: 'tube', Sphere: 'sphere', Box: 'box', 
+                                Torus: 'torus', Cylinder: 'cylinder', 
+                                TorusKnox: 'torusKnox', Cone :'cone'} ).name('Geometries');
+
+    ob.add( params, 'material', { Point: 'point', Textured: 'textured', Flat: 'flat', Wireframe: 'wireframe', 
+                                    Glossy: 'glossy', Smooth: 'smooth', Reflective: 'reflective'  } )
+        .name('Materials')
+        .onChange(function(val){
+            if (val!= 'reflective'){
+                ground.visible = true;
+                scene.background = new THREE.Color( 0xa0a0a0 );
+                helper.visible = true;
+            }else{
+                helper.visible = false;
+                ground.visible = false;
+            }
     });
-    ob.add(params, 'loadFile').name('LoadImage texture');
-    ob.addColor( params, 'color' ).name('Color object')
-    ob.add( params, 'animation' ).name('Animation').onChange(function(val){
+    ob.add(params, 'loadFile').name('Import image');
+    ob.addColor( params, 'color' ).name('Color picker')
+    ob.add( params, 'animation' ,{None: 'none', Animation1: 'animation1', Animation2: 'animation2'}).name('Animations').onChange(function(val){
         if(!val){
             mesh.position.set(0,40,0);
             mesh.rotation.x = 0;
             mesh.rotation.y = 0;
         }
     });
-    ob.add( params, 'modeControl', {Disable: 'disable', Translate: 'translate', Rotate: 'rotate', Scale: 'scale' } ).name('Mode Control');
-    // ob.open();
+    ob.add( params, 'modeControl', {Disable: 'disable',  Rotate: 'rotate', Scale: 'scale', Translate: 'translate' } ).name('Mode:');
     const paramsLight = {
-        'light color': spotLight.color.getHex(),
-        intensity: spotLight.intensity,
-        distance: spotLight.distance,
-        angle: spotLight.angle,
-        penumbra: spotLight.penumbra,
-        decay: spotLight.decay,
-        focus: spotLight.shadow.focus
+        'light color': spot_light.color.getHex(),
+        intensity: spot_light.intensity,
+        distance: spot_light.distance,
+        angle: spot_light.angle,
+        penumbra: spot_light.penumbra,
+        decay: spot_light.decay,
+        focus: spot_light.shadow.focus
     };
     let h = gui.addFolder('Light');
-    h.addColor( paramsLight, 'light color' ).onChange( function ( val ) {
-        spotLight.color.setHex( val );
+    h.addColor( paramsLight, 'light color' ).name('Color picker').onChange( function ( val ) {
+        spot_light.color.setHex( val );
         render();
     } );
     h.add( paramsLight, 'intensity', 0, 10 ).onChange( function ( val ) {
-        spotLight.intensity = val;
+        spot_light.intensity = val;
         render();
     } );
     h.add( paramsLight, 'distance', 200, 800 ).onChange( function ( val ) {
-        spotLight.distance = val;
+        spot_light.distance = val;
         render();
     } );
     h.add( paramsLight, 'angle', 0, Math.PI / 3 ).onChange( function ( val ) {
-        spotLight.angle = val;
+        spot_light.angle = val;
         render();
     } );
     h.add( paramsLight, 'penumbra', 0, 1 ).onChange( function ( val ) {
-        spotLight.penumbra = val;
+        spot_light.penumbra = val;
         render();
     } );
     h.add( paramsLight, 'decay', 1, 2 ).onChange( function ( val ) {
-        spotLight.decay = val;
+        spot_light.decay = val;
         render();
     } );
     h.add( paramsLight, 'focus', 0, 1 ).onChange( function ( val ) {
-        spotLight.shadow.focus = val;
+        spot_light.shadow.focus = val;
         render();
     } );
 
@@ -297,7 +307,7 @@ function init() {
     h.add( params, "ly", 0, 400, 10 ).name( "y" );
     h.add( params, "lz", -100, 100, 10 ).name( "z" );    
 
-    // event listener
+    // set on change listener
     document.getElementById('myInput').addEventListener('change', function(){
         const file1 = document.getElementById('myInput').files[0];
         let reader = new FileReader();
@@ -309,7 +319,7 @@ function init() {
             textureMap1.wrapS = textureMap1.wrapT = THREE.RepeatWrapping;
             textureMap1.anisotropy = 16;
             textureMap1.encoding = THREE.sRGBEncoding;
-            texturedMaterial = new THREE.MeshPhongMaterial( { color: params.color, map: textureMap1, side: THREE.DoubleSide } );
+            texture_material = new THREE.MeshPhongMaterial( { color: params.color, map: textureMap1, side: THREE.DoubleSide } );
         };
     })
     window.addEventListener( 'resize', onWindowResize );
@@ -354,42 +364,41 @@ function onWindowResize() {
 }
 
 function render() {
-    lightHelper.update();
-    shadowCameraHelper.update();
+    shadow_camera_helper.update();
     renderer.render( scene, perspective_camera );
 }
 
-function animate(){
-    requestAnimationFrame( animate );
+function loop(){
+    requestAnimationFrame( loop );
     simulate();
     render();
 }
 
 function simulate() {
     switch(params.shape){
-        case 'box':
-            mesh.geometry = boxGeo;
-            break;
         case 'sphere':
-            mesh.geometry = sphereGeo;
+            mesh.geometry = sphere;
+            break;
+        case 'tube':
+            mesh.geometry = tube;
+            break;  
+        case 'box':
+            mesh.geometry = box;
             break;
         case 'teapot':
-            mesh.geometry = teapotGeo;
+            mesh.geometry = teapot;
             break;
         case 'torus':
-            mesh.geometry = torusGeo;
+            mesh.geometry = torus;
             break; 
         case 'torusKnox':
-            mesh.geometry = torusKoxGeo;
+            mesh.geometry = torus_Kox;
             break;
         case 'cylinder':
-            mesh.geometry = cylinderGeo;
+            mesh.geometry = cylinder;
             break;   
         case 'cone':
-            mesh.geometry = coneGeo;
-            break;  
-        case 'tube':
-            mesh.geometry = tubeGeo;
+            mesh.geometry = cone;
             break;  
     } 
     if(params.material=='point'){
@@ -399,39 +408,55 @@ function simulate() {
         points.visible=false;
     }
     switch(params.material){
-        case 'wireframe':
-            mesh.material = wireMaterial;
-            break;
-        case 'point':
-            mesh.material = flatMaterial;
-            break;
-        case 'flat':
-            mesh.material = flatMaterial;
-            break;
         case 'smooth':
-            mesh.material = gouraudMaterial;
+            mesh.material = ground_material;
             break;
-        case 'glossy':
-            mesh.material = phongMaterial;
-            break;
-        case 'textured':
-            mesh.material = texturedMaterial;
+        case 'wireframe':
+            mesh.material = wire_material;
             break;
         case 'reflective':
-            mesh.material = reflectiveMaterial;
+            mesh.material = reflective_material;
             scene.background = textured_box;
+            break;
+        case 'flat':
+            mesh.material = flat_material;
+            break;
+        case 'glossy':
+            mesh.material = phong_material;
+            break;
+        case 'textured':
+            mesh.material = texture_material;
+            break;
+        case 'point':
+            mesh.material = flat_material;
             break;
     }   
     mesh.material.color.setHex( params.color ) ;  
-    spotLight.position.set(params.lx,params.ly,params.lz);
-    // perspective_camera.position.set(params.cx,params.cy,params.cz);
-    if (params.animation){
-        const time = Date.now();
-        mesh.position.x = Math.cos( time * 0.001 ) * 300;
-        mesh.position.y = Math.sin( time * 0.001 ) * 30;
-        mesh.position.z = Math.sin( time * 0.001 ) * 300;
+    spot_light.position.set(params.lx,params.ly,params.lz);
+    const time = Date.now();
+    switch (params.animation) {
+        case 'animation1':
+            
+            mesh.position.x = Math.sin( time * 0.001 ) * 300;
+            mesh.position.y = Math.sin( time * 0.001 ) * 30;
+            mesh.position.z = Math.cos( time * 0.001 ) * 300;
 
-        mesh.rotation.x += 0.02;
-        mesh.rotation.y += 0.03;
+            mesh.rotation.x += 0.04;
+            mesh.rotation.y += 0.08;
+            break;
+        case 'animation2':
+            
+            mesh.position.x = Math.cos( time * 0.001 ) * 300;
+            mesh.position.y = Math.sin( time * 0.001 ) * 2;
+            mesh.position.z = Math.cos( time * 0.001 ) * 300;
+
+            mesh.rotation.x += 0.02;
+            mesh.rotation.y += 0.05;
+            break;
+        default:
+            mesh.position.set(0,40,0);
+            mesh.rotation.x = 0;
+            mesh.rotation.y = 0;
+            break;
     }
 }
