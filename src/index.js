@@ -7,8 +7,8 @@ import { GUI } from 'three/examples/jsm/libs/dat.gui.module'
 
 
 let scene, renderer, mesh;
-let cameraPersp, cameraOrtho, currentCamera;
-let textureCube;
+let perspective_camera, orthographic_camera;
+let textured_box;
 let spotLight, lightHelper, shadowCameraHelper;
 let control, orbit, points;
 let wireMaterial, pointMaterial, flatMaterial, gouraudMaterial, phongMaterial, texturedMaterial, reflectiveMaterial;
@@ -19,7 +19,7 @@ let boxGeo, sphereGeo, teapotGeo, torusGeo, torusKoxGeo,cylinderGeo, coneGeo, tu
  * Base
  */
 
-class CustomSinCurve extends THREE.Curve {
+class SineCurve extends THREE.Curve {
 
 	constructor( scale = 1 ) {
 
@@ -101,12 +101,11 @@ function init() {
     
     // group camera
     const aspect = window.innerWidth / window.innerHeight;
-    cameraPersp = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 1000 );
-    cameraOrtho = new THREE.OrthographicCamera( - 600 * aspect, 600 * aspect, 600, - 600, 0.01, 30000 );
-    currentCamera = cameraPersp;
+    perspective_camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 1000 );
+    orthographic_camera = new THREE.OrthographicCamera( - 600 * aspect, 600 * aspect, 600, - 600, 0.01, 30000 );
 
-    currentCamera.position.set( 0, 500, 400 );
-    currentCamera.lookAt( new THREE.Vector3(0, 1, 0) );
+    perspective_camera.position.set( 0, 500, 400 );
+    perspective_camera.lookAt( new THREE.Vector3(0, 1, 0) );
 
     // scene
     scene = new THREE.Scene();
@@ -177,9 +176,9 @@ function init() {
         path + "py.jpg", path + "ny.jpg",
         path + "pz.jpg", path + "nz.jpg"
     ];
-    textureCube = new THREE.CubeTextureLoader().load( urls );
-    textureCube.encoding = THREE.sRGBEncoding;
-    reflectiveMaterial = new THREE.MeshPhongMaterial( { color: params.color, envMap: textureCube, side: THREE.DoubleSide , dithering: true } );
+    textured_box = new THREE.CubeTextureLoader().load( urls );
+    textured_box.encoding = THREE.sRGBEncoding;
+    reflectiveMaterial = new THREE.MeshPhongMaterial( { color: params.color, envMap: textured_box, side: THREE.DoubleSide , dithering: true } );
 
     // Geometry
     boxGeo = new THREE.BoxGeometry( 100, 100, 100 );
@@ -189,7 +188,7 @@ function init() {
     cylinderGeo = new THREE.CylinderGeometry(60.0, 60.0, 140.0, 30);
     coneGeo = new THREE.ConeGeometry( 80, 160, 64 );
     torusKoxGeo = new THREE.TorusKnotGeometry( 50, 30, 32, 8 );
-    const path1 = new CustomSinCurve( 80 );
+    const path1 = new SineCurve( 80 );
     tubeGeo =  new THREE.TubeGeometry( path1, 50, 30, 8, false );
 
     // Box with line
@@ -215,11 +214,11 @@ function init() {
     mesh.add( points );
 
     // controls
-    orbit = new OrbitControls( currentCamera, renderer.domElement );
+    orbit = new OrbitControls( perspective_camera, renderer.domElement );
     orbit.update();
     orbit.addEventListener( 'change', render );
 
-    control = new TransformControls( currentCamera, renderer.domElement );
+    control = new TransformControls( perspective_camera, renderer.domElement );
     control.addEventListener( 'change', render );
 
     control.addEventListener( 'dragging-changed', function ( event ) {
@@ -341,12 +340,12 @@ function onWindowResize() {
 
     const aspect = window.innerWidth / window.innerHeight;
 
-    cameraPersp.aspect = aspect;
-    cameraPersp.updateProjectionMatrix();
+    perspective_camera.aspect = aspect;
+    perspective_camera.updateProjectionMatrix();
 
-    cameraOrtho.left = cameraOrtho.bottom * aspect;
-    cameraOrtho.right = cameraOrtho.top * aspect;
-    cameraOrtho.updateProjectionMatrix();
+    orthographic_camera.left = orthographic_camera.bottom * aspect;
+    orthographic_camera.right = orthographic_camera.top * aspect;
+    orthographic_camera.updateProjectionMatrix();
 
     renderer.setSize( window.innerWidth, window.innerHeight );
 
@@ -357,7 +356,7 @@ function onWindowResize() {
 function render() {
     lightHelper.update();
     shadowCameraHelper.update();
-    renderer.render( scene, currentCamera );
+    renderer.render( scene, perspective_camera );
 }
 
 function animate(){
@@ -420,12 +419,12 @@ function simulate() {
             break;
         case 'reflective':
             mesh.material = reflectiveMaterial;
-            scene.background = textureCube;
+            scene.background = textured_box;
             break;
     }   
     mesh.material.color.setHex( params.color ) ;  
     spotLight.position.set(params.lx,params.ly,params.lz);
-    // currentCamera.position.set(params.cx,params.cy,params.cz);
+    // perspective_camera.position.set(params.cx,params.cy,params.cz);
     if (params.animation){
         const time = Date.now();
         mesh.position.x = Math.cos( time * 0.001 ) * 300;
