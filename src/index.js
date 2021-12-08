@@ -105,7 +105,7 @@ function init() {
     const aspect = window.innerWidth / window.innerHeight;
     perspective_camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 1, 1000 );
     orthographic_camera = new THREE.OrthographicCamera( - 600 * aspect, 600 * aspect, 600, - 600, 0.01, 30000 );
-    perspective_camera.position.set( 0, 500, 400 );
+    perspective_camera.position.set( 100, 200, 300 );
     perspective_camera.lookAt( new THREE.Vector3(0, 1, 0) );
 
     // scene
@@ -186,7 +186,7 @@ function init() {
     reflective_material = new THREE.MeshPhongMaterial( { color: params.color, envMap: textured_box, side: THREE.DoubleSide , dithering: true } );
 
     // Geometries
-    box = new THREE.BoxGeometry( 100, 100, 100 );
+    box = new THREE.BoxGeometry( 200, 200, 200 );
     sphere = new THREE.SphereGeometry( 100, 32, 32 );
     teapot = new TeapotGeometry(70, 5, true, true, true, true, true);
     torus = new THREE.TorusGeometry(50, 30, 10, 50)
