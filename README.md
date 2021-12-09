@@ -4,9 +4,9 @@
 
 ![Image Title](https://github.com/tuilatung/CS105-3D-Graphic/blob/master/Screenshot%202021-12-09%20093839.png)
 
-[Youtube Setup Video](https://youtu.be/MmjZG-UX30g)
+[Youtube Setup Video](https://youtu.be/fNnzLiZmFCg)
 
-[Demo](https://threejs-template.netlify.app/)
+[Demo](https://tuilatung.github.io/CS105-Deployment/)
 
 
 ## Installation
@@ -41,7 +41,7 @@ Compile the code for development and start a local server:
 ```
 yarn dev
 ```
-If you face to ERR_OSSL_EVP_UNSUPPORTED, run this script and re-run `yarn dev`
+If you face to ERR_OSSL_EVP_UNSUPPORTED, run this script and re-run `yarn dev`. If not, please SKIP this step!
 ```
 export NODE_OPTIONS=--openssl-legacy-provider
 ```
@@ -60,12 +60,6 @@ yarn build
 ## Credits
 
 - [Webpack THREE.js Template](https://github.com/brunosimon/webpack-three-js-template)
-
-## Misc
-
-Follow *@iviixio*: [Twitter](https://twitter.com/iviixio), [Instagram](https://www.instagram.com/iviixio/)
-
-Youtube Video: [Twitter](https://youtu.be/MmjZG-UX30g)
 
 ## License
 [MIT](LICENSE)
