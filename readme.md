@@ -2,7 +2,7 @@
 
 *Get started with Three.js to render 3d Web Experience*
 
-![Image Title](https://github.com/mohnishlandge/webgl-assets/blob/main/Screenshot%20(159).png)
+![Image Title](https://github.com/tuilatung/CS105-3D-Graphic/blob/master/Screenshot%202021-12-09%20093839.png)
 
 [Youtube Setup Video](https://youtu.be/MmjZG-UX30g)
 
