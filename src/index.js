@@ -15,7 +15,7 @@ let spot_light, shadow_camera_helper;
 let control, orbit, points;
 let wire_material, point_material, flat_material, ground_material;
 let phong_material, texture_material, reflective_material;
-let box, sphere, teapot, torus, torus_Kox, cylinder, cone, tube;
+let box, sphere, teapot, torus, circle, torus_Kox, cylinder, cone, tube, polyhedron, extrude;
 
 
 /**
@@ -187,14 +187,54 @@ function init() {
 
     // Geometries
     box = new THREE.BoxGeometry( 200, 200, 200 );
-    sphere = new THREE.SphereGeometry( 100, 32, 32 );
-    teapot = new TeapotGeometry(70, 5, true, true, true, true, true);
-    torus = new THREE.TorusGeometry(50, 30, 10, 50)
-    cylinder = new THREE.CylinderGeometry(60.0, 60.0, 140.0, 30);
-    cone = new THREE.ConeGeometry( 80, 160, 64 );
-    torus_Kox = new THREE.TorusKnotGeometry( 50, 30, 32, 8 );
-    const path1 = new SineCurve( 80 );
+    const path1 = new SineCurve( 75 );
     tube =  new THREE.TubeGeometry( path1, 50, 30, 8, false );
+    sphere = new THREE.SphereGeometry( 100, 64, 64 );
+    teapot = new TeapotGeometry(75, 10, true, true, true, true, true);
+    torus = new THREE.TorusGeometry(80, 30, 20, 45)
+    cone = new THREE.ConeGeometry( 100, 160, 64 );
+    torus_Kox = new THREE.TorusKnotGeometry( 60, 20, 100, 16 );
+    cylinder = new THREE.CylinderGeometry(70, 70, 140, 35);
+    circle = new THREE.CircleGeometry( 80, 64 );
+
+    // let _points = [];
+    // for ( let i = 0; i < 10; i ++ ) {
+    //     _points.push( new THREE.Vector2( Math.sin( i * 0.2 ) * 10 + 5, ( i - 5 ) * 2 ) );
+    // }
+    // polyhedron = new THREE.LatheGeometry( _points, 16, 1, 10 );
+
+    const verticesOfCube = [
+        -1,-1,-1,    1,-1,-1,    1, 1,-1,    -1, 1,-1,
+        -1,-1, 1,    1,-1, 1,    1, 1, 1,    -1, 1, 1,
+    ];
+    const indicesOfFaces = [
+        2,1,0,    0,3,2,
+        0,4,7,    7,3,0,
+        0,1,5,    5,4,0,
+        1,2,6,    6,5,1,
+        2,3,7,    7,6,2,
+        4,5,6,    6,7,4
+    ];
+    polyhedron = new THREE.PolyhedronGeometry( verticesOfCube, indicesOfFaces, 100, 200 );
+
+
+    const length = 100, width = 90;
+    const shape = new THREE.Shape();
+    shape.moveTo( 0,0 );
+    shape.lineTo( 0, width );
+    shape.lineTo( length, width );
+    shape.lineTo( length, 0 );
+    shape.lineTo( 0, 0 );
+    const extrudeSettings = {
+        steps: 2,
+        depth: 80,
+        bevelEnabled: true,
+        bevelThickness: 1,
+        bevelSize: 1,
+        bevelOffset: 0,
+        bevelSegments: 1
+    };
+    extrude = new THREE.ExtrudeGeometry( shape, extrudeSettings );
 
     // Box with line
     mesh = new THREE.Mesh(tube, flat_material);
@@ -218,7 +258,7 @@ function init() {
     points.visible = false;
     mesh.add( points );
 
-    // controls
+    // orbit controls
     orbit = new OrbitControls( perspective_camera, renderer.domElement );
     orbit.update();
     orbit.addEventListener( 'change', render );
@@ -234,11 +274,11 @@ function init() {
     control.attach( mesh );
     scene.add( control );
 
-    // add GUI
+    // add GUI controller
     let ob = gui.addFolder('Object');
-    ob.add( params, 'shape', { TeaPot: 'teapot', Tube: 'tube', Sphere: 'sphere', Box: 'box', 
-                                Torus: 'torus', Cylinder: 'cylinder', 
-                                TorusKnox: 'torusKnox', Cone :'cone'} ).name('Geometries');
+    ob.add( params, 'shape', { TeaPot: 'teapot', Tube: 'tube', Sphere: 'sphere', Box: 'box', Extrude: 'extrude',
+                                Torus: 'torus', Cylinder: 'cylinder', Polyhedron: 'polyhedron',
+                                TorusKnox: 'torusKnox', Circle: 'circle', Cone :'cone'} ).name('Geometries');
 
     ob.add( params, 'material', { Point: 'point', Textured: 'textured', Flat: 'flat', Wireframe: 'wireframe', 
                                     Glossy: 'glossy', Smooth: 'smooth', Reflective: 'reflective'  } )
@@ -281,7 +321,9 @@ function init() {
         spot_light.intensity = val;
         render();
     } );
-    h.add( paramsLight, 'distance', 200, 800 ).onChange( function ( val ) {
+    spot_light.distance = 700;
+    paramsLight.distance = spot_light.distance;
+    h.add( paramsLight, 'distance', 100, 900 ).onChange( function ( val ) {
         spot_light.distance = val;
         render();
     } );
@@ -301,6 +343,10 @@ function init() {
         spot_light.shadow.focus = val;
         render();
     } );
+
+    params.lx = 0;
+    params.ly = 350;
+    params.lz = 0;
 
     h = gui.addFolder( "Light direction" );
     h.add( params, "lx", -100, 100, 10 ).name( "x" );
@@ -400,6 +446,15 @@ function simulate() {
         case 'cone':
             mesh.geometry = cone;
             break;  
+        case 'polyhedron':
+            mesh.geometry = polyhedron;
+            break;
+        case 'circle':
+            mesh.geometry = circle;
+            break; 
+        case 'extrude':
+            mesh.geometry = extrude;
+            break; 
     } 
     if(params.material=='point'){
         points.visible=true;
