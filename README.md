@@ -64,4 +64,4 @@ yarn build
 ## License
 [MIT](LICENSE)
 
-Made with :blue_heart: by [Mohnish Landge](http://mohnishlandge.me)
+Made with :blue_heart: by Tung Huynh Thien
